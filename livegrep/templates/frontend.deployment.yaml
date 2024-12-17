@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "livegrep.frontendName" . }}
+  labels:
+    {{- include "livegrep.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "livegrep.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.frontend.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        component: frontend
+        {{- include "livegrep.labels" . | nindent 8 }}
+        {{- with .Values.frontend.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.frontend.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          command: ["/livegrep/bin/livegrep"]
+          args:
+            - "-docroot"
+            - "/livegrep/web"
+            - "-listen"
+            - "0.0.0.0:{{ .Values.frontend.service.port }}"
+            - "--connect"
+            - '{{ include "livegrep.backendName" . }}:{{ .Values.backend.service.port }}'
+          ports:
+            - containerPort: {{ .Values.frontend.service.port }} 
+          volumeMounts:
+            - name: index-volume
+              mountPath: /data
+      volumes:
+        - name: index-volume
+          persistentVolumeClaim:
+            claimName: {{ .Values.pvc.name }}

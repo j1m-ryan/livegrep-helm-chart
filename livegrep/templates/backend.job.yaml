@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata: 
+  name:  {{ include "livegrep.jobName" .}}
+  labels:
+    {{- include "livegrep.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      {{- with .Values.job.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: indexer
+          image: "{{ .Values.job.image.repository }}:{{ .Values.job.image.tag | default .Chart.AppVersion }}"
+          command: ["/livegrep/bin/livegrep-github-reindex"]
+          args: ["-http", "-repo", {{ .Values.job.repo }}, "-out", "/data/livegrep.idx", "-dir", "/data"]
+          volumeMounts:
+            - name: index-volume
+              mountPath: /data
+      restartPolicy: Never
+      volumes:
+        - name: index-volume
+          persistentVolumeClaim:
+            claimName: {{ .Values.pvc.name }} 

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "livegrep.backendName" . }}
+  labels:
+    {{- include "livegrep.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "livegrep.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.backend.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        component: backend
+        {{- include "livegrep.labels" . | nindent 8 }}
+        {{- with .Values.backend.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.backend.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["/livegrep/bin/codesearch"]
+          args: [
+            "-load_index",
+            "/data/livegrep.idx",
+            "-grpc",
+            "0.0.0.0:{{ .Values.backend.service.port }}"
+          ]
+          volumeMounts:
+            - name: index-volume
+              mountPath: /data
+      volumes:
+        - name: index-volume
+          persistentVolumeClaim:
+            claimName: {{ .Values.pvc.name }}

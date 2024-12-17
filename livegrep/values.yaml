@@ -1,0 +1,42 @@
+nameOverride: ""
+fullnameOverride: ""
+
+job:
+  repo: livegrep/livegrep # The GitHub repo to index
+  image:
+    repository: ghcr.io/livegrep/livegrep/indexer
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  imagePullSecrets: []
+
+pvc:
+  create: true
+  name: livegrep-pvc
+  storageClassName: standard
+  size: 2Gi
+
+backend:
+  image:
+    repository: ghcr.io/livegrep/livegrep/base
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  imagePullSecrets: []
+  replicaCount: 1
+  podAnnotations: {}
+  podLabels: {}
+  service:
+    type: ClusterIP
+    port: 9999
+
+frontend:
+  image:
+    repository: ghcr.io/livegrep/livegrep/base
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  imagePullSecrets: []
+  replicaCount: 1
+  podAnnotations: {}
+  podLabels: {}
+  service:
+    type: ClusterIP
+    port: 8910
