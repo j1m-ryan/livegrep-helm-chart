@@ -11,6 +11,8 @@ spec:
   resources:
     requests:
       storage: {{ .Values.pvc.size }} 
+{{- if hasKey .Values.pvc "storageClassName" -}}
   storageClassName: {{ .Values.pvc.storageClassName }} 
+{{- end -}}
 {{- end }}
 
