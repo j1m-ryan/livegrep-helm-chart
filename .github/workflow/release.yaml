@@ -1,0 +1,96 @@
+name: "Manual Release"
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Which part of the version to bump"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4.4.2
+
+      - name: Set up yq
+        uses: mikefarah/yq@v4.44.6
+
+      - name: Get current version from Chart.yaml
+        id: get_version
+        run: |
+          CURRENT_VERSION=$(yq e '.version' livegrep/Chart.yaml)
+          echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Calculate new version
+        id: bump_version
+        run: |
+          # Read inputs
+          RELEASE_TYPE="${{ github.event.inputs.release_type }}"
+          CURRENT_VERSION="${{ steps.get_version.outputs.current-version }}"
+
+          # We'll split out the version into x.y.z
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d '.' -f1)
+          MINOR=$(echo "$CURRENT_VERSION" | cut -d '.' -f2)
+          PATCH=$(echo "$CURRENT_VERSION" | cut -d '.' -f3)
+
+          case $RELEASE_TYPE in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumping from $CURRENT_VERSION to $NEW_VERSION"
+
+      - name: Update Chart.yaml with new version
+        run: |
+          yq e ".version = \"${{ steps.bump_version.outputs.new-version }}\" | \
+                .appVersion = \"${{ steps.bump_version.outputs.new-version }}\"" -i livegrep/Chart.yaml
+
+      - name: Commit and tag
+        run: |
+          NEW_VERSION="${{ steps.bump_version.outputs.new-version }}"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add livegrep/Chart.yaml
+          git commit -m "chore: release $NEW_VERSION [skip ci]"
+          git tag "v$NEW_VERSION"
+          git push origin HEAD
+          git push origin "v$NEW_VERSION"
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: "v${{ steps.bump_version.outputs.new-version }}"
+          release_name: "livegrep-helm-chart-${{ steps.bump_version.outputs.new-version }}"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Helm chart to DockerHub OCI
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          CHART_VERSION="${{ steps.bump_version.outputs.new-version }}"
+          helm package livegrep --version "$CHART_VERSION" --app-version "$CHART_VERSION"
+          helm push livegrep-"${CHART_VERSION}".tgz oci://registry-1.docker.io/jimryan/livegrep
