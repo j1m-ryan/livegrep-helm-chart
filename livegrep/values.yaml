@@ -2,7 +2,10 @@ nameOverride: ""
 fullnameOverride: ""
 
 job:
-  repo: livegrep/livegrep # The GitHub repo to index
+  repos:
+    - livegrep/livegrep
+  users:
+    - nginx
   image:
     repository: ghcr.io/livegrep/livegrep/indexer
     pullPolicy: IfNotPresent

@@ -15,7 +15,20 @@ spec:
         - name: indexer
           image: "{{ .Values.job.image.repository }}:{{ .Values.job.image.tag | default .Chart.AppVersion }}"
           command: ["/livegrep/bin/livegrep-github-reindex"]
-          args: ["-http", "-repo", {{ .Values.job.repo }}, "-out", "/data/livegrep.idx", "-dir", "/data"]
+          args:
+            - "-http"
+            {{- range .Values.job.repos }}
+            - "-repo"
+            - "{{ . }}"
+            {{- end }}
+            {{- range .Values.job.users }}
+            - "-user"
+            - "{{ . }}"
+            {{- end }}
+            - "-out"
+            - "/data/livegrep.idx"
+            - "-dir"
+            - "/data"
           volumeMounts:
             - name: index-volume
               mountPath: /data
@@ -23,4 +36,4 @@ spec:
       volumes:
         - name: index-volume
           persistentVolumeClaim:
-            claimName: {{ .Values.pvc.name }} 
+            claimName: {{ .Values.pvc.name }}
