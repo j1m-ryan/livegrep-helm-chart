@@ -93,4 +93,4 @@ jobs:
           echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
           CHART_VERSION="${{ steps.bump_version.outputs.new-version }}"
           helm package livegrep --version "$CHART_VERSION" --app-version "$CHART_VERSION"
-          helm push livegrep-"${CHART_VERSION}".tgz oci://registry-1.docker.io/jimryan/livegrep
+          helm push livegrep-"${CHART_VERSION}".tgz oci://registry-1.docker.io/jimryan
