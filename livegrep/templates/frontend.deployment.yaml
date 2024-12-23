@@ -37,7 +37,7 @@ spec:
             - "-listen"
             - "0.0.0.0:{{ .Values.frontend.service.port }}"
             - "--connect"
-            - '{{ include "livegrep.backendName" . }}:{{ .Values.backend.service.port }}'
+            - '{{ include "livegrep.backendName" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.backend.service.port }}'
           ports:
             - containerPort: {{ .Values.frontend.service.port }} 
           volumeMounts:
