@@ -2,6 +2,9 @@ apiVersion: batch/v1
 kind: Job
 metadata: 
   name:  {{ include "livegrep.jobName" .}}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": hook-succeeded
   labels:
     {{- include "livegrep.labels" . | nindent 4 }}
 spec:
