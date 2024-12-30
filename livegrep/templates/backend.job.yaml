@@ -14,6 +14,14 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      initContainers:
+        - name: cleanup-repos
+          image: busybox
+          command: ["sh", "-c"]
+          args: ["rm -rf /data/* /data/.* || true"]
+          volumeMounts:
+            - name: index-volume
+              mountPath: /data
       containers:
         - name: indexer
           image: "{{ .Values.job.image.repository }}:{{ .Values.job.image.tag | default .Chart.AppVersion }}"
