@@ -35,6 +35,8 @@ spec:
           volumeMounts:
             - name: index-volume
               mountPath: /data
+          env:
+            {{- toYaml .Values.job.env | nindent 12 }}
       restartPolicy: Never
       volumes:
         - name: index-volume
