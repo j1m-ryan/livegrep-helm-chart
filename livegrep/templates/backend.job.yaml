@@ -9,6 +9,13 @@ metadata:
     {{- include "livegrep.labels" . | nindent 4 }}
 spec:
   template:
+    metadata:
+      labels:
+        component: job
+        {{- include "livegrep.labels" . | nindent 8 }}
+        {{- with .Values.job.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- with .Values.job.imagePullSecrets }}
       imagePullSecrets:
