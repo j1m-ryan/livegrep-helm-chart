@@ -11,6 +11,7 @@ job:
     pullPolicy: IfNotPresent
     tag: "latest"
   imagePullSecrets: []
+  podLabels: {}
   env:
     []
     # - name: GITHUB_KEY
