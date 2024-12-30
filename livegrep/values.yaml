@@ -11,6 +11,13 @@ job:
     pullPolicy: IfNotPresent
     tag: "latest"
   imagePullSecrets: []
+  env:
+    []
+    # - name: GITHUB_KEY
+    #   valueFrom:
+    #     secretKeyRef:
+    #       name: livegrep-github-token
+    #       key: github-token
 
 pvc:
   create: true
